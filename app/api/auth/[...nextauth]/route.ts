@@ -1,13 +1,84 @@
-import NextAuth from "next-auth"
+import { prismaClient } from "../../../lib/db";
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 const handler = NextAuth({
-    providers: [
-        GoogleProvider({
-          clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ""
-        })
-      ]
-})
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
+  ],
+  callbacks: {
+    async signIn(params) {
+      console.log(params);
 
-export { handler as GET, handler as POST }  
+      if (!params.user.email) {
+        return false;
+      }
+      try {
+        await prismaClient.user.create({
+          data: {
+            email: params.user.email,
+            provider: "google",
+          },
+        });
+      } catch (error) {
+
+      }
+      return true
+    },
+  },
+});
+
+export { handler as GET, handler as POST };
+
+
+/* 
+
+
+import NextAuth from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import { prismaClient } from '../../../lib/db';
+
+const handler = NextAuth({
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
+  ],
+  callbacks: {
+    async signIn(params) {
+      console.log("Sign-in attempt:", params);
+
+      if (!params.user.email) {
+        console.error("No email provided");
+        return false;
+      }
+
+      try {
+        await prismaClient.user.create({
+          data: {
+            email: params.user.email,
+            provider: "google",
+          },
+        });
+        console.log("User created successfully");
+        return true;
+      } catch (error) {
+        console.error("Error during sign-in:", error);
+        if (error.code === "P2002") {
+          console.log("User already exists");
+          return true; // Allow sign-in for existing users
+        }
+        return false;
+      }
+    },
+  },
+});
+
+export { handler as GET, handler as POST };
+
+
+*/
